@@ -797,6 +797,8 @@ class EF_Custom_Status extends EF_Module {
 	 * @since 0.7
 	 */
 	function handle_edit_custom_status() {
+		global $edit_flow;
+
 		if ( !isset( $_POST['submit'], $_GET['page'], $_GET['action'], $_GET['term-id'] )
 			|| $_GET['page'] != $this->module->settings_slug || $_GET['action'] != 'edit-status' )
 				return;
@@ -804,7 +806,7 @@ class EF_Custom_Status extends EF_Module {
 		if ( !wp_verify_nonce( $_POST['_wpnonce'], 'edit-status' ) )
 			wp_die( $this->module->messages['nonce-failed'] );
 
-		if ( !current_user_can( 'manage_options' ) )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( $this->module->messages['invalid-permissions'] );
 
 		if ( !$existing_status = $this->get_custom_status_by( 'id', (int)$_GET['term-id'] ) )
@@ -881,7 +883,7 @@ class EF_Custom_Status extends EF_Module {
 			wp_die( __( 'Invalid nonce for submission.', 'edit-flow' ) );
 
 		// Only allow users with the proper caps
-		if ( !current_user_can( 'manage_options' ) )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( __( 'Sorry, you do not have permission to edit custom statuses.', 'edit-flow' ) );
 
 		$term_id = (int)$_GET['term-id'];
@@ -904,6 +906,7 @@ class EF_Custom_Status extends EF_Module {
 	 * @since 0.7
 	 */
 	function handle_delete_custom_status() {
+		global $edit_flow;
 
 		// Check that this GET request is our GET request
 		if ( !isset( $_GET['page'], $_GET['action'], $_GET['term-id'], $_GET['nonce'] )
@@ -915,7 +918,7 @@ class EF_Custom_Status extends EF_Module {
 			wp_die( __( 'Invalid nonce for submission.', 'edit-flow' ) );
 
 		// Only allow users with the proper caps
-		if ( !current_user_can( 'manage_options' ) )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( __( 'Sorry, you do not have permission to edit custom statuses.', 'edit-flow' ) );
 
 		// Check to make sure the status isn't already deleted
@@ -969,11 +972,12 @@ class EF_Custom_Status extends EF_Module {
 	 * @since 0.7
 	 */
 	function handle_ajax_update_status_positions() {
+		global $edit_flow;
 
 		if ( !wp_verify_nonce( $_POST['custom_status_sortable_nonce'], 'custom-status-sortable' ) )
 			$this->print_ajax_response( 'error', $this->module->messages['nonce-failed'] );
 
-		if ( !current_user_can( 'manage_options') )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			$this->print_ajax_response( 'error', $this->module->messages['invalid-permissions'] );
 
 		if ( !isset( $_POST['status_positions'] ) || !is_array( $_POST['status_positions'] ) )
@@ -1003,7 +1007,7 @@ class EF_Custom_Status extends EF_Module {
 		if ( !wp_verify_nonce( $_POST['inline_edit'], 'custom-status-inline-edit-nonce' ) )
 			die( $this->module->messages['nonce-failed'] );
 
-		if ( !current_user_can( 'manage_options') )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			die( $this->module->messages['invalid-permissions'] );
 
 		$term_id = (int) $_POST['status_id'];

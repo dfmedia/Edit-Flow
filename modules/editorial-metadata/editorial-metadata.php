@@ -340,8 +340,10 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * Load the post metaboxes for all of the post types that are supported
 	 */
 	function handle_post_metaboxes() {
+		global $edit_flow;
+
 		$title = __( 'Editorial Metadata', 'edit-flow' );
-		if ( current_user_can( 'manage_options' ) ) {
+		if ( current_user_can( $edit_flow->edit_flow_admin_capability ) ) {
 			// Make the metabox title include a link to edit the Editorial Metadata terms. Logic similar to how Core dashboard widgets work.
 			$url = add_query_arg( 'page', 'ef-editorial-metadata-settings', get_admin_url( null, 'admin.php' ) );
 			$title .= ' <span class="postbox-title-action"><a href="' . esc_url( $url ) . '" class="edit-box open-box">' . __( 'Configure' ) . '</a></span>';
@@ -359,6 +361,8 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * @param object $post Current post
 	 */
 	function display_meta_box( $post ) {
+		global $edit_flow;
+
 		echo "<div id='" . self::metadata_taxonomy . "_meta_box'>";
 		// Add nonce for verification upon save
 		echo "<input type='hidden' name='" . self::metadata_taxonomy . "_nonce' value='" . wp_create_nonce(__FILE__) . "' />";
@@ -366,7 +370,7 @@ class EF_Editorial_Metadata extends EF_Module {
 		$terms = $this->get_editorial_metadata_terms();
 		if ( !count( $terms ) ) {
 			$message = __( 'No editorial metadata available.' );
-			if ( current_user_can( 'manage_options' ) )
+			if ( current_user_can( $edit_flow->edit_flow_admin_capability ) )
 				$message .= sprintf( __( ' <a href="%s">Add fields to get started</a>.' ), $this->get_link() );
 			else 
 				$message .= __( ' Encourage your site administrator to configure your editorial workflow by adding editorial metadata.' );
@@ -998,6 +1002,7 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * Handles a request to add a new piece of editorial metadata
 	 */
 	function handle_add_editorial_metadata() {
+		global $edit_flow;
 
 		if ( !isset( $_POST['submit'], $_POST['form-action'], $_GET['page'] ) 
 			|| $_GET['page'] != $this->module->settings_slug || $_POST['form-action'] != 'add-term' )
@@ -1006,8 +1011,8 @@ class EF_Editorial_Metadata extends EF_Module {
 		if ( !wp_verify_nonce( $_POST['_wpnonce'], 'editorial-metadata-add-nonce' ) )
 			wp_die( $this->module->messages['nonce-failed'] );
 			
-		if ( !current_user_can( 'manage_options' ) )
-			wp_die( $this->module->messages['invalid-permissions'] );			
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
+			wp_die( $this->module->messages['invalid-permissions'] );
 		
 		// Sanitize all of the user-entered values
 		$term_name = sanitize_text_field( trim( $_POST['metadata_name'] ) );
@@ -1078,6 +1083,8 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * Handles a request to edit an editorial metadata
 	 */
 	function handle_edit_editorial_metadata() {
+		global $edit_flow;
+
 		if ( !isset( $_POST['submit'], $_GET['page'], $_GET['action'], $_GET['term-id'] ) 
 			|| $_GET['page'] != $this->module->settings_slug || $_GET['action'] != 'edit-term' )
 				return; 
@@ -1085,8 +1092,8 @@ class EF_Editorial_Metadata extends EF_Module {
 		if ( !wp_verify_nonce( $_POST['_wpnonce'], 'editorial-metadata-edit-nonce' ) )
 			wp_die( $this->module->messages['nonce-failed'] );
 			
-		if ( !current_user_can( 'manage_options' ) )
-			wp_die( $this->module->messages['invalid-permissions'] );			
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
+			wp_die( $this->module->messages['invalid-permissions'] );
 		
 		if ( !$existing_term = $this->get_editorial_metadata_term_by( 'id', (int)$_GET['term-id'] ) )
 			wp_die( $this->module->messsage['term-error'] );			
@@ -1158,8 +1165,9 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * @since 0.7
 	 */
 	function handle_change_editorial_metadata_visibility() {
-		
-		// Check that the current GET request is our GET request		
+		global $edit_flow;
+
+		// Check that the current GET request is our GET request
 		if ( !isset( $_GET['page'], $_GET['action'], $_GET['term-id'], $_GET['nonce'] )
 			|| $_GET['page'] != $this->module->settings_slug || !in_array( $_GET['action'], array( 'make-viewable', 'make-hidden' ) ) )
 			return;
@@ -1169,7 +1177,7 @@ class EF_Editorial_Metadata extends EF_Module {
 			wp_die( $this->module->messages['nonce-failed'] );
 		
 		// Only allow users with the proper caps
-		if ( !current_user_can( 'manage_options' ) )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( $this->module->messages['invalid-permissions'] );
 		
 		$term_id = (int)$_GET['term-id'];
@@ -1195,11 +1203,12 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * @since 0.7
 	 */
 	function handle_ajax_inline_save_term() {
+		global $edit_flow;
 		
 		if ( !wp_verify_nonce( $_POST['inline_edit'], 'editorial-metadata-inline-edit-nonce' ) )
 			die( $this->module->messages['nonce-failed'] );
 			
-		if ( !current_user_can( 'manage_options') )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			die( $this->module->messages['invalid-permissions'] );
 		
 		$term_id = (int) $_POST['term_id'];
@@ -1276,11 +1285,12 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * @since 0.7
 	 */
 	function handle_ajax_update_term_positions() {
+		global $edit_flow;
 
 		if ( !wp_verify_nonce( $_POST['editorial_metadata_sortable_nonce'], 'editorial-metadata-sortable' ) )
 			$this->print_ajax_response( 'error', $this->module->messages['nonce-failed'] );
 		
-		if ( !current_user_can( 'manage_options') )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			$this->print_ajax_response( 'error', $this->module->messages['invalid-permissions'] );
 		
 		if ( !isset( $_POST['term_positions'] ) || !is_array( $_POST['term_positions'] ) )
@@ -1302,6 +1312,8 @@ class EF_Editorial_Metadata extends EF_Module {
 	 * Handles a request to delete an editorial metadata term
 	 */
 	function handle_delete_editorial_metadata() {
+		global $edit_flow;
+
 		if ( !isset( $_GET['page'], $_GET['action'], $_GET['term-id'] ) 
 			|| $_GET['page'] != $this->module->settings_slug || $_GET['action'] != 'delete-term' )
 				return;
@@ -1309,7 +1321,7 @@ class EF_Editorial_Metadata extends EF_Module {
 		if ( !wp_verify_nonce( $_GET['nonce'], 'delete-term' ) )
 			wp_die( $this->module->messages['nonce-failed'] );
 			
-		if ( !current_user_can( 'manage_options' ) )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( $this->module->messages['invalid-permissions'] );
 			
 		if ( !$existing_term = $this->get_editorial_metadata_term_by( 'id', (int)$_GET['term-id'] ) )

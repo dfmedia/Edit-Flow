@@ -9,7 +9,7 @@ class EF_Settings extends EF_Module {
 	/**
 	 * Register the module with Edit Flow but don't do anything else
 	 */
-	function __construct() {	
+	function __construct() {
 		
 		// Register the module with Edit Flow
 		$this->module_url = $this->get_module_url( __FILE__ );
@@ -34,8 +34,11 @@ class EF_Settings extends EF_Module {
 	 * Initialize the rest of the stuff in the class if the module is active
 	 */
 	function init() {
+		global $edit_flow;
+
+		$edit_flow->edit_flow_admin_capability = apply_filters( 'edit_flow_manage_cap', 'manage_options' );
 		
-		add_action( 'admin_init', array( $this, 'helper_settings_validate_and_save' ), 100 );		
+		add_action( 'admin_init', array( $this, 'helper_settings_validate_and_save' ), 100 );
 		
 		add_action( 'admin_print_styles', array( $this, 'action_admin_print_styles' ) );
 		add_action( 'admin_print_scripts', array( $this, 'action_admin_print_scripts' ) );
@@ -43,6 +46,7 @@ class EF_Settings extends EF_Module {
 		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
 		
 		add_action( 'wp_ajax_change_edit_flow_module_state', array( $this, 'ajax_change_edit_flow_module_state' ) );
+
 		
 	}
 	
@@ -58,13 +62,13 @@ class EF_Settings extends EF_Module {
 		else :
 			$ef_logo = 'lib/eflogo_s32.png';
 		endif;
-		
-		add_menu_page( $this->module->title, $this->module->title, 'manage_options', $this->module->settings_slug, array( $this, 'settings_page_controller' ), $this->module->module_url . $ef_logo ) ;
+
+		add_menu_page( $this->module->title, $this->module->title, $edit_flow->edit_flow_admin_capability, $this->module->settings_slug, array( $this, 'settings_page_controller' ), $this->module->module_url . $ef_logo ) ;
 		
 		foreach ( $edit_flow->modules as $mod_name => $mod_data ) {
 			if ( isset( $mod_data->options->enabled ) && $mod_data->options->enabled == 'on'
 				&& $mod_data->configure_page_cb && $mod_name != $this->module->name )
-				add_submenu_page( $this->module->settings_slug, $mod_data->title, $mod_data->title, 'manage_options', $mod_data->settings_slug, array( $this, 'settings_page_controller' ) ) ;
+				add_submenu_page( $this->module->settings_slug, $mod_data->title, $mod_data->title, $edit_flow->edit_flow_admin_capability, $mod_data->settings_slug, array( $this, 'settings_page_controller' ) ) ;
 		}
 	}
 	
@@ -102,7 +106,7 @@ class EF_Settings extends EF_Module {
 	function ajax_change_edit_flow_module_state() {
 		global $edit_flow;
 		
-		if ( !wp_verify_nonce( $_POST['change_module_nonce'], 'change-edit-flow-module-nonce' ) || !current_user_can( 'manage_options') )
+		if ( !wp_verify_nonce( $_POST['change_module_nonce'], 'change-edit-flow-module-nonce' ) || !current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( __( 'Cheatin&#8217; uh?' ) );
 	
 		if ( !isset( $_POST['module_action'], $_POST['slug'] ) )
@@ -346,18 +350,18 @@ class EF_Settings extends EF_Module {
 	 * @since 0.7	
 	 */
 	function helper_settings_validate_and_save() {
-					
+		
 		if ( !isset( $_POST['action'], $_POST['_wpnonce'], $_POST['option_page'], $_POST['_wp_http_referer'], $_POST['edit_flow_module_name'], $_POST['submit'] ) || !is_admin() )
 			return false;
 			
-		global $edit_flow;			
+		global $edit_flow;
 		$module_name = sanitize_key( $_POST['edit_flow_module_name'] );
 				
 		if ( $_POST['action'] != 'update' 
 			|| $_POST['option_page'] != $edit_flow->$module_name->module->options_group_name )
 			return false;
 		
-		if ( !current_user_can( 'manage_options' ) || !wp_verify_nonce( $_POST['_wpnonce'], $edit_flow->$module_name->module->options_group_name . '-options' ) )
+		if ( !current_user_can( $edit_flow->edit_flow_admin_capability ) || !wp_verify_nonce( $_POST['_wpnonce'], $edit_flow->$module_name->module->options_group_name . '-options' ) )
 			wp_die( __( 'Cheatin&#8217; uh?' ) );			
 	
 		$new_options = ( isset( $_POST[$edit_flow->$module_name->module->options_group_name] ) ) ? $_POST[$edit_flow->$module_name->module->options_group_name] : array();

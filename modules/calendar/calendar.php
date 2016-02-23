@@ -495,11 +495,12 @@ class EF_Calendar extends EF_Module {
 	 * @since 0.8
 	 */
 	public function handle_regenerate_calendar_feed_secret() {
+		global $edit_flow;
 
 		if ( ! isset( $_GET['action'] ) || 'ef_calendar_regenerate_calendar_feed_secret' != $_GET['action'] )
 			return;
 
-		if ( ! current_user_can( 'manage_options' ) )
+		if ( ! current_user_can( $edit_flow->edit_flow_admin_capability ) )
 			wp_die( $this->module->messages['invalid-permissions'] );
 
 		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'ef-regenerate-ics-key' ) )

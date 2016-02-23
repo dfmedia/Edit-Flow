@@ -41,6 +41,9 @@ class edit_flow {
 	var $options_group = 'edit_flow_';
 	var $options_group_name = 'edit_flow_options';
 
+	//set our default permission capability
+	var $edit_flow_admin_capability = '';
+
 	/**
 	 * @var EditFlow The one true EditFlow
 	 */
@@ -148,6 +151,7 @@ class edit_flow {
 		add_action( 'admin_init', array( $this, 'action_admin_init' ) );
 
 		do_action_ref_array( 'editflow_after_setup_actions', array( &$this ) );
+
 	}
 
 	/**
